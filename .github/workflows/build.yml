@@ -14,17 +14,30 @@ jobs:
         with:
           submodules: 'recursive'
 
-      - name: Build with ESP-IDF
+      # 关键：复制ESP32-C3专用配置，适配v5.3.1
+      - name: Copy ESP32-C3 config
+        run: |
+          cp sdkconfig.defaults.esp32c3 sdkconfig.defaults
+          echo "CONFIG_IDF_TARGET_ESP32C3=y" >> sdkconfig.defaults
+          echo "CONFIG_ESPTOOLPY_FLASHMODE_QIO=y" >> sdkconfig.defaults
+
+      # 使用v5.3.1版本编译
+      - name: Build with ESP-IDF v5.3.1
         uses: espressif/esp-idf-ci-action@v1
         with:
           esp_idf_version: 'v5.3.1'
           target: 'esp32c3'
           path: '.'
+          # 强制更新子模块，解决v5.3.1依赖问题
+          command: |
+            idf.py set-target esp32c3
+            idf.py build
 
+      # 上传编译好的固件
       - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
-          name: firmware
+          name: firmware-esp32c3-v5.3.1
           path: |
             build/bootloader/bootloader.bin
             build/partition_table/partition-table.bin
